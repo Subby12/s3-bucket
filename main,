@@ -1,0 +1,51 @@
+        resource "aws_s3_bucket" "s3_webhosting" {
+    bucket = var.bucket_name
+
+    tags = {
+      name = "web_server"
+    }
+}
+
+resource "aws_s3_object" "index_html" {
+    bucket = aws_s3_bucket.s3_webhosting.bucket
+    key    = "index.html"
+    source = "./index.html"
+
+    content_type = "text/html"
+}
+
+resource "aws_s3_bucket_website_configuration" "s3_webhosting" {
+    bucket = aws_s3_bucket.s3_webhosting.id
+
+    index_document {
+        suffix = "index.html"
+    }
+}
+
+resource "aws_iam_policy" "s3_access_policy" {
+  name   = "s3-access-policy"
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "AllowS3Access"
+        Effect   = "Allow"
+        Action   = "s3:*"
+        Resource = [
+          aws_s3_bucket.s3_webhosting.arn,
+          "${aws_s3_bucket.s3_webhosting.arn}/*",
+        ]
+      },
+      {
+        Sid      = "AllowS3BucketAclAccess"
+        Effect   = "Allow"
+        Action   = "s3:PutBucketAcl"
+        Resource = [
+          aws_s3_bucket.s3_webhosting.arn,
+          "${aws_s3_bucket.s3_webhosting.arn}/*",
+        ]
+      },
+    ]
+  })
+}
+
